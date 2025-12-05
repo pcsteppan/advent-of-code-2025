@@ -1,18 +1,22 @@
 const std = @import("std");
+
 const input = @embedFile("input.txt");
 
 pub fn main() !void {
+    var timer = try std.time.Timer.start();
     try part1();
+    var elapsed = timer.read();
+    std.debug.print("elapsed: {}ms\n", .{elapsed / 1_000_000});
+
     try part2();
+    elapsed = timer.read();
+    std.debug.print("elapsed: {}ms\n", .{elapsed / 1_000_000});
 }
 
 // just iterates through the range, and then compares the first and second half of even digit numbers
 fn part1() !void {
     var sum: usize = 0;
-    var lines = std.mem.tokenizeAny(u8, input, "\r\n");
-    const first_line = lines.next().?;
-    var ranges_iter = std.mem.tokenizeAny(u8, first_line, ",");
-
+    var ranges_iter = get_ranges();
     while (ranges_iter.next()) |range| {
         var range_iter = std.mem.tokenizeAny(u8, range, "-");
         var from = try std.fmt.parseInt(usize, range_iter.next().?, 10);
@@ -37,18 +41,22 @@ fn part1() !void {
 // my part 2 converts each num to string to make comparisons / checks for repetition easier
 fn part2() !void {
     var sum: usize = 0;
-    var lines = std.mem.tokenizeAny(u8, input, "\r\n");
-    const first_line = lines.next().?;
-    var ranges_iter = std.mem.tokenizeAny(u8, first_line, ",");
 
+    // buffer for numbers that we stringify in the loop
+    var buf: [32]u8 = undefined;
+
+    var ranges_iter = get_ranges();
     while (ranges_iter.next()) |range| {
         var range_iter = std.mem.tokenizeAny(u8, range, "-");
         var from = try std.fmt.parseInt(usize, range_iter.next().?, 10);
         const to = try std.fmt.parseInt(usize, range_iter.next().?, 10);
         while (from <= to) {
-            const num_of_digits = get_num_of_digits(from);
-            var chunk_size = num_of_digits / 2;
             var is_repeating = false;
+
+            // converting num to string
+            const slice = try std.fmt.bufPrint(&buf, "{d}", .{from});
+            const num_of_digits = slice.len;
+            var chunk_size = num_of_digits / 2;
 
             while (chunk_size > 0) {
                 if (num_of_digits % chunk_size > 0) {
@@ -56,9 +64,6 @@ fn part2() !void {
                     continue;
                 }
 
-                // converting num to string
-                var buf: [32]u8 = undefined;
-                const slice = try std.fmt.bufPrint(&buf, "{d}", .{from});
                 if (has_identical_chunks(slice, chunk_size)) {
                     is_repeating = true;
                     break;
@@ -76,6 +81,13 @@ fn part2() !void {
     }
 
     std.debug.print("part 2: {d}\n", .{sum});
+}
+
+fn get_ranges() std.mem.TokenIterator(u8, .any) {
+    var lines = std.mem.tokenizeAny(u8, input, "\r\n");
+    const first_line = lines.next().?;
+    const ranges_iter = std.mem.tokenizeAny(u8, first_line, ",");
+    return ranges_iter;
 }
 
 fn get_num_of_digits(n: usize) usize {
