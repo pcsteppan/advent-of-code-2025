@@ -31,3 +31,12 @@ I chose zig because I didn't want to write C (jk!), and I have already done a fa
 - first time using go, getting familiar with basics of language
 - much much easier to get started w/, and seems nice to write
 - parsing, vars + assignments, make(), for loop (the only loop), pointers and references
+
+**Day 6 - Go**
+- this problem comes down to parsing
+- as a result, getting familiar with 'strings' package and helpers
+
+**Day 7 - Go**
+- go is really easy and quick to write!
+- maybe my fastest day so far
+- work with maps/sets
