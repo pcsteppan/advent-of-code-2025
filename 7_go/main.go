@@ -10,11 +10,11 @@ import (
 func main() {
 	input := readFileToStr("input.txt")
 	lines := slices.Collect(strings.Lines(input))
-	p1 := solve(lines)
-	fmt.Println(p1)
+	part1(lines)
+	part2(lines)
 }
 
-func solve(lines []string) uint {
+func part1(lines []string) {
 	rays := make(map[int]bool)
 	start_ray_pos := strings.Index(lines[0], "S")
 	rays[start_ray_pos] = true
@@ -30,25 +30,36 @@ func solve(lines []string) uint {
 				rays[i+1] = true
 			}
 		}
-		// for each intersection, sum += 1
-		// and we update the rays set accordingly
 	}
 
-	return uint(split_count)
+	fmt.Printf("part 1: %d\n", split_count)
 }
 
-// type Point struct {
-// 	x int
-// 	y int
-// }
+func part2(lines []string) {
+	rays := make(map[int]int)
+	start_ray_pos := strings.Index(lines[0], "S")
+	rays[start_ray_pos] = 1
 
-// type Tree struct {
-// 	data map[Point]Point
-// }
+	for _, line := range lines {
+		// iterate over positions of ^
+		for i, c := range line {
+			if c == rune('^') && rays[i] > 0 {
+				paths := rays[i]
+				rays[i] = 0
+				rays[i-1] += paths
+				rays[i+1] += paths
+			}
+		}
+	}
 
-// func createTree(lines []string) Tree {
+	// sum final path counts
+	sum := 0
+	for _, n := range rays {
+		sum += n
+	}
 
-// }
+	fmt.Printf("part 1: %d\n", sum)
+}
 
 func readFileToStr(fname string) string {
 	data, _ := os.ReadFile(fname)
