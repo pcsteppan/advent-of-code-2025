@@ -20,3 +20,8 @@ I chose zig because I didn't want to write C (jk!), and I have already done a fa
 - `@constCast` doesn't make memory writable, need `@memcpy`
 - struct methods
 - optionals (`?`)
+
+**Day 5 - Zig**
+- more custom struct work, but this was mostly a logic + off-by-one kind of puzzle
+- created a "range array" data structure
+- struct format - zig's .ToString() equivalent, helped with debugging
