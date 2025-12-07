@@ -25,3 +25,9 @@ I chose zig because I didn't want to write C (jk!), and I have already done a fa
 - more custom struct work, but this was mostly a logic + off-by-one kind of puzzle
 - created a "range array" data structure
 - struct format - zig's .ToString() equivalent, helped with debugging
+
+**Day 3 - Go**
+- went back and did, what I think was the easiest day so far, in go
+- first time using go, getting familiar with basics of language
+- much much easier to get started w/, and seems nice to write
+- parsing, vars + assignments, make(), for loop (the only loop), pointers and references
