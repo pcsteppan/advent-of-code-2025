@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"maps"
 	"math"
 	"os"
 	"slices"
@@ -34,11 +35,11 @@ func main() {
 }
 
 func area(a, b Vec2) int {
-	res := (a.x - b.x + 1) * (a.y - b.y + 1)
-	if res < 0 {
-		res *= -1
-	}
-	return res
+	minx := min(a.x, b.x)
+	miny := min(a.y, b.y)
+	maxx := max(a.x, b.x)
+	maxy := max(a.y, b.y)
+	return (maxx - minx + 1) * (maxy - miny + 1)
 }
 
 func part1(data *[]Vec2) {
@@ -54,17 +55,25 @@ func part1(data *[]Vec2) {
 	fmt.Printf("part 1: %d\n", largest)
 }
 
-// this approach won't work, because some edges may lie in the interior of shapes
-// which might mean we have to go back to actually modeling something and creating a set of inner tiles?
-// I hope not
+type Grid struct {
+	data [][]int
+}
+
+func (g *Grid) isInside(v Vec2) bool {
+	for i, x := range g.data[v.y] {
+		if x > v.x {
+			return i%2 == 1
+		}
+	}
+	return false
+}
+
 func part2(data *[]Vec2) {
-	tiles := make(map[Vec2]bool)
+	tiles := make(map[Vec2]struct{})
 
 	origin := (*data)[0]
 	minX, maxX, minY, maxY := origin.x, origin.x, origin.y, origin.y
 
-	// doing 2 things here: writing edges into map, and finding bounding box
-	// i still starts at 0 when we range over a slice like so
 	for i, a := range *data {
 		var b Vec2
 		if i == 0 {
@@ -79,65 +88,55 @@ func part2(data *[]Vec2) {
 		maxY = max(maxY, a.y)
 
 		if a.x == b.x {
-			// iterate through y diff
 			for y := min(a.y, b.y); y < max(a.y, b.y); y++ {
-				tiles[Vec2{x: a.x, y: y}] = true
-			}
-		} else {
-			// iterate through x diff
-			for x := min(a.x, b.x); x < max(a.x, b.x); x++ {
-				tiles[Vec2{x: x, y: a.y}] = true
+				tiles[Vec2{x: a.x, y: y}] = struct{}{}
 			}
 		}
 	}
 
-	fmt.Println(minX, minY, maxX, maxY)
-
+	xValuesOfInterest := make(map[int]struct{})
 	for _, v := range *data {
-		tiles[v] = true
+		tiles[v] = struct{}{}
+		xValuesOfInterest[v.x] = struct{}{}
 	}
 
-	// once we have edges set up, we can fill in the shapes by
-	// using edge detection
+	xValues := slices.Collect(maps.Keys(xValuesOfInterest))
+	slices.Sort(xValues)
 
-	fmt.Println("filling")
-
+	grid := Grid{data: make([][]int, maxY+1)}
 	for y := minY; y <= maxY; y++ {
-		prev := false
+		row := make([]int, 0)
+		lastOutsideEdge := None
 		inside := false
+		for _, x := range xValues {
+			_, isEdge := (tiles[Vec2{x, y}])
 
-		fmt.Printf("%d/%d\r", y, maxY)
+			if isEdge {
+				crossingType := crossingType(&Vec2{x, y}, &tiles)
 
-		for x := minX; x <= maxX; x++ {
-			if (tiles[Vec2{x, y}]) {
-				// fmt.Print("#")
-				if !prev {
-					inside = !inside
-				}
-				prev = true
-			} else {
-				if inside {
-					tiles[Vec2{x, y}] = true
-					// fmt.Print("X")
+				if !inside {
+					inside = true
+					row = append(row, x)
+					lastOutsideEdge = crossingType
 				} else {
-					// fmt.Print(".")
+					if crossingType == Both {
+						inside = false
+						row = append(row, x+1)
+					} else if lastOutsideEdge == crossingType {
+						row = append(row, x+1)
+						inside = false
+					}
 				}
-				prev = false
 			}
 		}
-		// fmt.Println()
+		grid.data[y] = row
 	}
-	// do the same thing as part 1, but verify everything
-	// inside is in the tiles set/map
-	fmt.Println("")
-	fmt.Println("finding")
 
-	largest := 1000
+	largest := 0
 	for i, a := range *data {
-		fmt.Printf("%d/%d\r", i, len(*data))
 		for _, b := range (*data)[i:] {
 			area := area(a, b)
-			if area > largest && isValidRect(&a, &b, &tiles) {
+			if area > largest && isValidRect(&a, &b, &grid) {
 				largest = area
 			}
 		}
@@ -146,15 +145,70 @@ func part2(data *[]Vec2) {
 	fmt.Printf("part 2: %d\n", largest)
 }
 
-func isValidRect(a *Vec2, b *Vec2, lookup *map[Vec2]bool) bool {
-	for y := min(a.y, b.y); y < max(a.y, b.y); y++ {
-		for x := min(a.x, b.x); x < max(a.x, b.x); x++ {
-			if !(*lookup)[Vec2{x: x, y: y}] {
-				return false
-			}
+type Crossing int
+
+const (
+	OnlyUp Crossing = iota
+	OnlyDown
+	Both
+	None
+)
+
+func crossingType(v *Vec2, tiles *map[Vec2]struct{}) Crossing {
+	up := Vec2{x: v.x, y: v.y - 1}
+	down := Vec2{x: v.x, y: v.y + 1}
+	_, isUp := (*tiles)[up]
+	if !isUp {
+		return OnlyDown
+	}
+
+	_, isDown := (*tiles)[down]
+	if !isDown {
+		return OnlyUp
+	} else {
+		return Both
+	}
+}
+
+func isValidRect(a *Vec2, b *Vec2, grid *Grid) bool {
+	start := min(a.x, b.x)
+	end := max(a.x, b.x)
+	for y := min(a.y, b.y); y <= max(a.y, b.y); y++ {
+		if !grid.isValidRow(y, start, end) {
+			return false
 		}
 	}
 	return true
+}
+
+func (grid *Grid) isValidRow(y, start, end int) bool {
+	row := (*grid).data[y]
+	if len(row) == 0 {
+		return false
+	}
+	i := findInsertionPoint(row, start)
+
+	if i >= len(row) {
+		return false
+	}
+
+	return i%2 == 1 && row[i] >= end
+}
+
+func findInsertionPoint(arr []int, target int) int {
+	lo, hi := 0, len(arr)
+
+	for lo < hi {
+		mid := (lo + hi) / 2
+
+		if arr[mid] <= target {
+			lo = mid + 1
+		} else {
+			hi = mid
+		}
+	}
+
+	return lo
 }
 
 func readFileToStr(fname string) string {
