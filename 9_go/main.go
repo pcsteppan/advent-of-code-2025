@@ -1,6 +1,7 @@
 package main
 
 import (
+	. "daynine/lib"
 	"fmt"
 	"maps"
 	"math"
@@ -31,7 +32,7 @@ func main() {
 	}
 
 	part1(&data)
-	part2(&data)
+	part2(data)
 }
 
 func area(a, b Vec2) int {
@@ -68,18 +69,19 @@ func (g *Grid) isInside(v Vec2) bool {
 	return false
 }
 
-func part2(data *[]Vec2) {
+func part2(data []Vec2) {
 	tiles := make(map[Vec2]struct{})
 
-	origin := (*data)[0]
+	origin := data[0]
 	minX, maxX, minY, maxY := origin.x, origin.x, origin.y, origin.y
+	tiles[origin] = struct{}{}
 
-	for i, a := range *data {
+	for i, a := range data {
 		var b Vec2
 		if i == 0 {
-			b = (*data)[len(*data)-1]
+			b = data[len(data)-1]
 		} else {
-			b = (*data)[i-1]
+			b = data[i-1]
 		}
 
 		minX = min(minX, a.x)
@@ -87,15 +89,17 @@ func part2(data *[]Vec2) {
 		minY = min(minY, a.y)
 		maxY = max(maxY, a.y)
 
+		tiles[a] = struct{}{}
+		tiles[b] = struct{}{}
 		if a.x == b.x {
-			for y := min(a.y, b.y); y < max(a.y, b.y); y++ {
+			for y := min(a.y, b.y); y <= max(a.y, b.y); y++ {
 				tiles[Vec2{x: a.x, y: y}] = struct{}{}
 			}
 		}
 	}
 
 	xValuesOfInterest := make(map[int]struct{})
-	for _, v := range *data {
+	for _, v := range data {
 		tiles[v] = struct{}{}
 		xValuesOfInterest[v.x] = struct{}{}
 	}
@@ -105,36 +109,40 @@ func part2(data *[]Vec2) {
 
 	grid := Grid{data: make([][]int, maxY+1)}
 	for y := minY; y <= maxY; y++ {
-		row := make([]int, 0)
-		lastOutsideEdge := None
-		inside := false
+		// convert to format for helper
+		edges := make([]Edge, 0)
 		for _, x := range xValues {
-			_, isEdge := (tiles[Vec2{x, y}])
-
-			if isEdge {
-				crossingType := crossingType(&Vec2{x, y}, &tiles)
-
-				if !inside {
-					inside = true
-					row = append(row, x)
-					lastOutsideEdge = crossingType
-				} else {
-					if crossingType == Both {
-						inside = false
-						row = append(row, x+1)
-					} else if lastOutsideEdge == crossingType {
-						row = append(row, x+1)
-						inside = false
-					}
-				}
+			edgeType := getEdgeType(Vec2{x, y}, tiles)
+			if edgeType == None {
+				continue
 			}
+			edges = append(edges, Edge{edgeType, x})
 		}
+
+		if len(edges) == 0 {
+			continue
+		}
+
+		// reduce row to only outer edges
+		outerEdges, err := GetEdges(edges)
+		if err != nil {
+			fmt.Printf("=== ERROR AT %d ===\n", y)
+			fmt.Println(edges)
+			panic(err)
+		}
+
+		// get indices
+		row := make([]int, len(outerEdges))
+		for i, e := range outerEdges {
+			row[i] = e.Id
+		}
+
 		grid.data[y] = row
 	}
 
 	largest := 0
-	for i, a := range *data {
-		for _, b := range (*data)[i:] {
+	for i, a := range data {
+		for _, b := range data[i:] {
 			area := area(a, b)
 			if area > largest && isValidRect(&a, &b, &grid) {
 				largest = area
@@ -145,29 +153,28 @@ func part2(data *[]Vec2) {
 	fmt.Printf("part 2: %d\n", largest)
 }
 
-type Crossing int
+func getEdgeType(v Vec2, tiles map[Vec2]struct{}) EdgeType {
+	_, self := tiles[v]
+	if !self {
+		return None
+	}
 
-const (
-	OnlyUp Crossing = iota
-	OnlyDown
-	Both
-	None
-)
-
-func crossingType(v *Vec2, tiles *map[Vec2]struct{}) Crossing {
 	up := Vec2{x: v.x, y: v.y - 1}
 	down := Vec2{x: v.x, y: v.y + 1}
-	_, isUp := (*tiles)[up]
-	if !isUp {
-		return OnlyDown
-	}
+	_, isUp := tiles[up]
+	_, isDown := tiles[down]
 
-	_, isDown := (*tiles)[down]
-	if !isDown {
-		return OnlyUp
-	} else {
+	if isUp && isDown {
 		return Both
 	}
+	if isUp && !isDown {
+		return Up
+	}
+	if !isUp && isDown {
+		return Down
+	}
+
+	return None
 }
 
 func isValidRect(a *Vec2, b *Vec2, grid *Grid) bool {

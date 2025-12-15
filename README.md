@@ -40,3 +40,18 @@ I chose zig because I didn't want to write C (jk!), and I have already done a fa
 - go is really easy and quick to write!
 - maybe my fastest day so far
 - work with maps/sets
+
+**Day 8 - Go**
+- custom `Graph` struct for tracking node groups/regions
+- nested loops are O(n x (n-1)/2) not O(n^2) - generate all unique pairs once, sort by distance, process in order
+- struct methods with pointer receivers for mutation (`*Graph`) vs value receivers for read-only (`Graph`)
+- `Vec3` struct for 3D points + `Coupling` struct to pair nodes with their distance
+
+**Day 9 - Go**
+- first time using Go modules + separate package (`daynine/lib`)
+- ended up reaching for TDD approach after a lot of trial and error, since edge detection logic was tricky, or at least my implementation was tricky
+- enums were useful here for my `EdgeType` (Up/Down/Both/None) and `ShapePosition` (In/Out/OnEdge)
+- compressed 2D representation: store only x-coordinates of edges per row, not full grid
+- binary search (`findInsertionPoint`) to check if a point is inside the shape
+- learned Go uses fat pointers for slices/maps - data passed by reference automatically, explicit `*` pointers less needed than expected
+- learning sets in go are just maps to boolean values basically, but struct{} requires no memory whereas bool does, so the convention is to use `map[T]struct{}` rather than `map[T]bool`
