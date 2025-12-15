@@ -41,6 +41,15 @@ I chose zig because I didn't want to write C (jk!), and I have already done a fa
 - maybe my fastest day so far
 - work with maps/sets
 
+<details>
+  <summary>Spoiler - approach</summary>
+  
+  - single pass over the data, keeping track of reduced state in a map
+  - update state as you traverse - no tree or graph structure needed
+  - made this one pretty quick to solve
+  
+</details>
+
 **Day 8 - Go**
 - custom `Graph` struct for tracking node groups/regions
 - struct methods with pointer receivers for mutation (`*Graph`) vs value receivers for read-only (`Graph`)
@@ -50,6 +59,12 @@ I chose zig because I didn't want to write C (jk!), and I have already done a fa
   <summary>Spoiler - approach</summary>
   
   - nested loops are O(n x (n-1)/2) not O(n^2) - generate all unique pairs once, sort by distance, process in order
+  - the "graph" doesn't store edges - just tracks which group each node belongs to via `map[Vec3]int`
+  - `Connect(a, b)` handles 4 cases: both nodes already grouped (merge groups), one grouped (add other to that group), neither grouped (create new group)
+  - track `NodeCount` and `GroupCount` to know when all nodes are in one connected component (part 2 answer)
+  
+  _addendum_:
+  this is essentially a union-find (disjoint set) structure, but my merge is O(n) since I iterate all nodes to update group IDs. union-find uses pointers, so merge is O(1). for a larger input size, that optimization would be useful   
   
 </details>
 
