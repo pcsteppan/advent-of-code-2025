@@ -31,7 +31,7 @@ func main() {
 		data[i] = createVec2(line)
 	}
 
-	part1(&data)
+	part1(data)
 	part2(data)
 }
 
@@ -43,10 +43,10 @@ func area(a, b Vec2) int {
 	return (maxx - minx + 1) * (maxy - miny + 1)
 }
 
-func part1(data *[]Vec2) {
+func part1(data []Vec2) {
 	largest := math.MinInt
-	for i, a := range *data {
-		for _, b := range (*data)[i:] {
+	for i, a := range data {
+		for _, b := range data[i:] {
 			area := area(a, b)
 			if area > largest {
 				largest = area
@@ -58,15 +58,6 @@ func part1(data *[]Vec2) {
 
 type Grid struct {
 	data [][]int
-}
-
-func (g *Grid) isInside(v Vec2) bool {
-	for i, x := range g.data[v.y] {
-		if x > v.x {
-			return i%2 == 1
-		}
-	}
-	return false
 }
 
 func part2(data []Vec2) {
@@ -110,6 +101,7 @@ func part2(data []Vec2) {
 	grid := Grid{data: make([][]int, maxY+1)}
 	for y := minY; y <= maxY; y++ {
 		// convert to format for helper
+		// pre-allocating len(xValues) for capacity, in the third arg of make, didn't make a difference
 		edges := make([]Edge, 0)
 		for _, x := range xValues {
 			edgeType := getEdgeType(Vec2{x, y}, tiles)
@@ -144,7 +136,7 @@ func part2(data []Vec2) {
 	for i, a := range data {
 		for _, b := range data[i:] {
 			area := area(a, b)
-			if area > largest && isValidRect(&a, &b, &grid) {
+			if area > largest && isValidRect(a, b, grid) {
 				largest = area
 			}
 		}
@@ -174,10 +166,10 @@ func getEdgeType(v Vec2, tiles map[Vec2]struct{}) EdgeType {
 		return Down
 	}
 
-	return None
+	panic("Unexpected edge found")
 }
 
-func isValidRect(a *Vec2, b *Vec2, grid *Grid) bool {
+func isValidRect(a, b Vec2, grid Grid) bool {
 	start := min(a.x, b.x)
 	end := max(a.x, b.x)
 	for y := min(a.y, b.y); y <= max(a.y, b.y); y++ {
@@ -188,8 +180,8 @@ func isValidRect(a *Vec2, b *Vec2, grid *Grid) bool {
 	return true
 }
 
-func (grid *Grid) isValidRow(y, start, end int) bool {
-	row := (*grid).data[y]
+func (grid Grid) isValidRow(y, start, end int) bool {
+	row := grid.data[y]
 	if len(row) == 0 {
 		return false
 	}

@@ -53,5 +53,8 @@ I chose zig because I didn't want to write C (jk!), and I have already done a fa
 - enums were useful here for my `EdgeType` (Up/Down/Both/None) and `ShapePosition` (In/Out/OnEdge)
 - compressed 2D representation: store only x-coordinates of edges per row, not full grid
 - binary search (`findInsertionPoint`) to check if a point is inside the shape
-- learned Go uses fat pointers for slices/maps - data passed by reference automatically, explicit `*` pointers less needed than expected
+- learned Go uses fat pointers for slices/maps - data passed by reference automatically, explicit `*` pointers less needed than expected. passing by value also indicates read-only intent vs. using pointer on type is kind of signaling `mut`
 - learning sets in go are just maps to boolean values basically, but struct{} requires no memory whereas bool does, so the convention is to use `map[T]struct{}` rather than `map[T]bool`
+
+_addendum_:
+I think there is another way to solve this one, where you track the corners around the corners you are adding in, based off your direction. you'd end up with a set of points that are 'left of the line' and a set of points that are 'right of the line', and one of those would be the set of points which are inside the shape -- and that could also be a valid way to solve the problem, but I ended up going with edge detection because it felt more familiar from a problem in previous years.
